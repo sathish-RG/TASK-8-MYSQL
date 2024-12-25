@@ -3,5 +3,6 @@
 ## Create database named ecommerce.
 
 ### code
-`create database ecommerce;
-use ecommerce; `
+```sql
+create database ecommerce;
+use ecommerce; 
