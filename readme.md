@@ -21,7 +21,7 @@ address text
 ```sql
 desc customers;
 ```
---output
+output
 ```markdown
 +---------+--------------+------+-----+---------+----------------+
 | Field   | Type         | Null | Key | Default | Extra          |
@@ -45,7 +45,7 @@ CREATE TABLE orders (
 ```sql
 desc orsers;
 ```
---output
+output
 ```markdown
 +--------------+---------------+------+-----+---------+----------------+
 | Field        | Type          | Null | Key | Default | Extra          |
@@ -69,7 +69,7 @@ create table products(
 ```sql
 desc products;
 ```
---output
+output
 ```markdown
 +-------------+---------------+------+-----+---------+----------------+
 | Field       | Type          | Null | Key | Default | Extra          |
@@ -94,7 +94,7 @@ select * from customers;
 ```
 --Customers table output:
 ```markdown
---output
+output
 +----+---------+-------------------+---------+
 | id | name    | email             | address |
 +----+---------+-------------------+---------+
@@ -113,7 +113,7 @@ values (curdate(),50.00),
 ```sql 
 select * from orders;
 ```
---output
+output
 ```markdown
 +----+-------------+------------+--------------+
 | id | customer_id | order_date | total_amount |
@@ -133,7 +133,7 @@ values('Product A',30.00,'discription of product A'),
 ```sql 
 select * from products;
 ```
---output
+output
 ```markdown
 +----+-----------+-------+--------------------------+
 | id | name      | price | description              |
@@ -143,3 +143,171 @@ select * from products;
 |  3 | Product C | 25.00 | discription of product C |
 +----+-----------+-------+--------------------------+
 ```
+# QUERIES:
+## 1) Retrieve all customers who have placed an order in the last 30 days.
+```sql
+select distinct c.*
+from customers c
+join orders o on c.id = o.customer_id
+where o.order_date >= curdate() - interval 30 day;
+```
+output
+```markdown
++----+---------+-------------------+--------------+
+| id | name    | email             | address      |
++----+---------+-------------------+--------------+
+|  7 | Sathish | sathish@gmail.com |  chennai     |
+|  8 | Balaji  | balaji@gmail.com  |  banglur     |
++----+---------+-------------------+--------------+
+```
+## 2) Get the total amount of all orders placed by each customer.
+```sql
+select c.name, SUM(o.total_amount) as total_spent
+from customers c
+join orders o on c.id = o.customer_id
+group by c.id;
+```
+output
+```markdown
++---------+-------------+
+| name    | total_spent |
++---------+-------------+
+| Sathish |       50.00 |
+| Balaji  |       75.00 |
+| Ragav   |       30.00 |
++---------+-------------+
+```
+## 3) Update the price of Product C to 45.00.
+```sql
+ UPDATE products
+    -> SET price = 45.00
+    -> WHERE name = 'product c';
+```
+```sql 
+SELECT * FROM products WHERE name = 'product c';
+```
+output
+```markdown
++----+-----------+-------+--------------------------+      
+| id | name      | price | description              |      
++----+-----------+-------+--------------------------+      
+|  3 | Product C | 45.00 | discription of product C |      
++----+-----------+-------+--------------------------+ 
+```     
+## 4)  Add a new column discount to the products table.
+```sql
+alter table products
+add column discount decimal(5,2) default 0.00;
+```
+```sql
+select * from products;
+```
+output
+```markdown
++----+-----------+-------+--------------------------+----------+
+| id | name      | price | description              | discount |
++----+-----------+-------+--------------------------+----------+
+|  1 | Product A | 30.00 | discription of product A |     0.00 |
+|  2 | Product B | 40.00 | discription of product B |     0.00 |
+|  3 | Product C | 45.00 | discription of product C |     0.00 |
++----+-----------+-------+--------------------------+----------+
+```
+## 5) Retrieve the top 3 products with the highest price.
+```sql
+SELECT name, price FROM products 
+ORDER BY price DESC
+LIMIT 3;
+```
+output
+``` markdown
++-----------+-------+
+| name      | price |
++-----------+-------+
+| Product C | 45.00 |
+| Product B | 40.00 |
+| Product A | 30.00 |
++-----------+-------+
+```
+## 6) Get the names of customers who have ordered Product A.
+```sql
+SELECT DISTINCT c.name
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+JOIN order_items oi ON o.id = oi.order_id
+JOIN products p ON oi.product_id = p.id
+WHERE p.name = 'Product A';
+```
+output
+```markdown
++----------+
+| name     |
++----------+
+| Sathish  |
+| Balaji   |
++----------+
+```
+## 7) Join the orders and customers tables to retrieve the customer's name and order date for each order.
+```sql
+select c.name, o.order_date
+from orders o
+join customers c on o.customer_id = c.id;
+```
+output
+```markdown
++---------+------------+
+| name    | order_date |
++---------+------------+
+| Sathish | 2024-12-25 |
+| Balaji  | 2024-12-15 |
+| Ragav   | 2024-11-15 |
++---------+------------+
+```
+## 8) Retrieve the orders with a total amount greater than 150.00
+```sql
+select * from orders
+where total_amount > 150.00;
+```
+output
+```markdown
++----+-------------+------------+--------------+
+| id | customer_id | order_date | total_amount |
++----+-------------+------------+--------------+
+| 36 |           7 | 2024-12-25 |       200.00 |
++----+-------------+------------+--------------+
+```
+## 9) Normalize the database by creating a separate table for order items and updating the orders table to reference the order_items table.
+```sql
+create table order_items (
+    id int auto_increment primary key,
+    order_id int,
+    product_id int,
+    quantity int default 1,
+    Foreign key  (order_id) references orders(id),
+    Foreign key (product_id) references products(id));
+```
+output
+```markdown
++------------+------+------+-----+---------+-------+
+| Field      | Type | Null | Key | Default | Extra |
++------------+------+------+-----+---------+-------+
+| order_id   | int  | NO   | PRI | NULL    |       |
+| product_id | int  | NO   | PRI | NULL    |       |
+| quantity   | int  | YES  |     | NULL    |       |
++------------+------+------+-----+---------+-------+
+```
+## 10) Retrieve the average total of all orders.
+```sql
+select AVG(total_amount) as average_order_total
+FROM orders;
+```
+output
+```markdown
++---------------------+
+| average_order_total |
++---------------------+
+|           88.750000 |
++---------------------+
+```
+
+
+
